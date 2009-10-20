@@ -2,7 +2,7 @@ import GTCrate
 import TS
 
 cell = GTCrate.getGTCell()
-#cell.setDebug(True)
+cell.setDebug(True)
 
 print "GTL.REC3.Status = ", cell.HardwareFunctionGet({
     'Board Type' : 'GTL',
@@ -23,3 +23,9 @@ cell.exceptionThreshold = 2000
 
 print "Configure result:"
 res = cell.Configure({ 'TSC KEY' : 'gt_2009_0' })
+
+print cell.InterconnectionTest(configure = True,
+                               load_pattern = True,
+                               particle = 'CA1',
+                               pattern = 'COUNTER_8',
+                               seed = TS.UnsignedInt(923))
