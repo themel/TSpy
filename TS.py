@@ -30,6 +30,7 @@ class Cell:
         self.handleWarning = self.defaultWarningHandler
 
     def setDebug(self,debug):
+        """Enable or disable debugging."""
         self._debug = debug
         if(debug):
             SOAPpy.Config.debug = 1
@@ -42,6 +43,9 @@ class Cell:
         return TSProxy(self, name)
 
     def defaultWarningHandler(self, method, res):
+        """The default warning handler: throws a CellException if warningLevel > exceptionThreshold,
+           reports the error to stderr and returns the payload otherwise."""
+           
         if res.warningLevel > self.exceptionThreshold:
             raise CellException(method, res)
         else:
@@ -120,7 +124,7 @@ class WrapType:
         return self._type(name='param', data=self._value, attrs = {'xmlns' : cell._ns, 'name' : name})
 
 # A laundry list of trivial implementations: We just need to map these basic types and encode
-# like in the base class.
+# like in the base class. Should be extended to include everything in SOAPpy.Types.*type.
 class UnsignedShort(WrapType):
     _type = SOAPpy.unsignedShortType
 
@@ -133,7 +137,10 @@ class String(WrapType):
 class Bool(WrapType):
     _type = SOAPpy.booleanType
 
-class CellException(Exception):    
+    
+
+class CellException(Exception):
+    """Custom exception type to make handling errors from CellCommands easier."""
     _errorResult = None
     _method = None
     warningMessage = ''
@@ -155,7 +162,6 @@ class CellException(Exception):
                                                                               self._errorResult.warningLevel, self._errorResult.warningMessage)
     
                 
-    
         
 
 
