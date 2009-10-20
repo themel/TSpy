@@ -1,16 +1,10 @@
+import GTCrate
 import TS
 
-cell = TS.Cell('http://localhost:3228', "GT Cell");
+cell = GTCrate.getGTCell()
 #cell.setDebug(True)
 
-params = {}
-params['Board Type'] = 'GTL'
-params['Item'] = 'REC3.Status'
-
-
-print "GTL.REC3.Status=", cell.HardwareFunctionGet(params)
-
-print cell.HardwareFunctionGet({
+print "GTL.REC3.Status = ", cell.HardwareFunctionGet({
     'Board Type' : 'GTL',
     'Item' : 'REC3.Status'
     })
