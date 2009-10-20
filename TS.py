@@ -131,12 +131,23 @@ class UnsignedShort(WrapType):
 class UnsignedLong(WrapType):
     _type = SOAPpy.unsignedLongType
 
+class UnsignedInt(WrapType):
+    _type = SOAPpy.unsignedIntType
+
 class String(WrapType):
     _type = SOAPpy.stringType
 
 class Bool(WrapType):
     _type = SOAPpy.booleanType
 
+class Int(WrapType):
+    _type = SOAPpy.intType
+
+class Short(WrapType):
+    _type = SOAPpy.shortType
+
+class Long(WrapType):
+    _type = SOAPpy.longType
     
 
 class CellException(Exception):
