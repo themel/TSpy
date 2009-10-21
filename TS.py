@@ -1,5 +1,6 @@
 from SOAPpy.Client import SOAPProxy
 import SOAPpy.Types
+import random
 from sys import stderr
 
 
@@ -13,6 +14,7 @@ class Cell:
     _proxy=None
     exceptionThreshold = -1
 
+    # TODO: Do theses things have, you know, meaning?
     _defaultAttributes = {'async':'false',
                           'cid':'2314893',
                           'sid':'2',               
@@ -40,7 +42,7 @@ class Cell:
     def __getattr__(self, name):
         """ Returns either a TSProxy object that represents the command, so that
             cell.foo is a callable object (and you can do cell.foo(bar='bla'))."""
-        return TSProxy(self, name)
+        return Proxy(self, name)
 
     def defaultWarningHandler(self, method, res):
         """The default warning handler: throws a CellException if warningLevel > exceptionThreshold,
@@ -51,17 +53,35 @@ class Cell:
         else:
             stderr.write("**Warning**: Command %s of cell %s returned warning level %d: %s" % (method._method, self._name, res.warningLevel, res.warningMessage))
             return res.payload
-        
+
+    def createOperation(self, opName, id='', params=None, **kw):
+        # if no id is supplied, generate a random one
+        if not id:
+            id = "%s-py-%04d" % (opName, random.randint(0,9999))
+            
+        # add the extra <operation> element to the arguments
+        if params:
+            params['__op'] = OpInitializer(opName, id)
+        else:               
+            kw['__op'] = OpInitializer(opName, id)
+
+        self.OpInit(**kw)
+
+        # TODO: better error checking.
+        return Operation(self, id)
+
+    def destroyOperation(self, id):
+        self.OpKill(op = String(id, 'operation'))
 
         
-class TSProxy:
+class Proxy:
     """A callable object that represents a TS cell command. Usually instantiated by accessing an attribute
-       of a  TSCell instance."""
+       of a TSCell instance."""
     _cell = None
     _method = ''
     
     def __init__(self, cell, methodName):
-        self._cell = cell
+        self._cell = cell        
         self._method = methodName
 
     def __call__(self, params=None, **kw):
@@ -78,8 +98,8 @@ class TSProxy:
             # replace keyword arguments with the single dict argument
             kw = params
 
-        # list comprehension: convert all args to SOAP types
-        soapArgs = [ self.convertArgument(arg, kw) for arg in kw]
+        # convert arguments to TS types
+        soapArgs = self.convertArguments(kw)
 
         # This looks worse than it is - it just gets python to call the method
         # specified by this proxy through the SOAPProxy object of the cell
@@ -90,6 +110,9 @@ class TSProxy:
             return self._cell.handleWarning(self, res)
 
         return res
+
+    def convertArguments(self, argDict):
+        return [ self.convertArgument(arg, argDict) for arg in argDict]
         
     def convertArgument(self,arg,dict):
         """Converts arguments given to the method call from Python to their appropriate encoding in
@@ -112,16 +135,54 @@ class TSProxy:
             raise TypeError, "Unable to convert argument %s to appropriate TS type, please use a TS wrapper type (eg TS.UnsignedShort)!" % arg
 
 
+
+class OperationProxy(Proxy):
+    """A proxy object to call commands on an operation."""
+    def __init__(self, operation, method):
+        self._operation = operation
+        self._opCmd = method
+        Proxy.__init__(self, operation._cell, 'OpSendCommand')
+        
+    def convertArguments(self, argDict):
+        """ Override of original proxy convertArguments, always prepending the fixed operation attributes"""
+        soapArgs = [ SOAPpy.Types.stringType(name='operation', data=self._operation._id, attrs = {'xmlns' : self._cell._ns}),
+                     SOAPpy.Types.stringType(name='command', data=self._opCmd, attrs = {'xmlns' : self._cell._ns}),
+                   ]
+
+        soapArgs.extend(Proxy.convertArguments(self, argDict))
+        return soapArgs
+        
+
+class Operation:
+    """This class encapsulates an Operation instance. State transitions are executed
+       by executing methods, very much like calling CellCommands on the Cell.
+       The selfDestruct attribute controls whether the life time of the operation
+       instance in the cell should be coupled to the life time of the Python object."""
+    
+    def __init__(self, cell, id):
+        self._cell = cell
+        self._id = id
+        self.selfDestruct = True
+
+    def __del__(self):
+        if self.selfDestruct:
+            return self._cell.destroyOperation(self._id)
+
+    def __getattr__(self, name):
+        return OperationProxy(self, name)
+
+    
 class WrapType:
     """A wrapper that handles the mapping of the trigger supervisor command parameter types to SOAPpy types."""
     _type = None
     _value = None
 
-    def __init__(self,value):
+    def __init__(self,value,name='param'):
         self._value = value
+        self._name = name
     
     def toSOAP(self, name, cell):
-        return self._type(name='param', data=self._value, attrs = {'xmlns' : cell._ns, 'name' : name})
+        return self._type(name=self._name, data=self._value, attrs = {'xmlns' : cell._ns, 'name' : name})
 
 # A laundry list of trivial implementations: We just need to map these basic types and encode
 # like in the base class. Should be extended to include everything in SOAPpy.Types.*type.
@@ -148,8 +209,18 @@ class Short(WrapType):
 
 class Long(WrapType):
     _type = SOAPpy.longType
-    
 
+class OpInitializer(WrapType):
+    """An unfortunate hack to allow setting creating the <operation opId='myId'>OperationName</operation>
+       syntax used in the OpInit command."""
+
+    def __init__(self, operation, opId):
+        self._operation = operation
+        self._opId = opId
+        
+    def toSOAP(self, name, cell):
+        return SOAPpy.Types.stringType(name='operation', data=self._operation, attrs = {'xmlns' : cell._ns, 'opId' : self._opId})
+    
 class CellException(Exception):
     """Custom exception type to make handling errors from CellCommands easier."""
     _errorResult = None
@@ -160,7 +231,6 @@ class CellException(Exception):
     
     def __init__(self, method, errorResult):
         # internal data
-
         self._errorResult = errorResult
         self._method = method
         # easy access methods
@@ -171,10 +241,7 @@ class CellException(Exception):
     def __str__(self):
         return "Error from command %s in cell %s (warning level = %u): %s" % (self._method._method, self._method._cell._name,
                                                                               self._errorResult.warningLevel, self._errorResult.warningMessage)
-    
-                
         
-
 
 # tweak SOAPpy - this is really evil stuff, but neccessary because the TS SOAP code
 # is not very generous in what it accepts. We manipulate SOAPpy into using the XSIv3 and XSVv3
