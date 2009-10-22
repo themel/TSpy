@@ -1,18 +1,18 @@
 import GTCrate
-import TS
-import xml.dom.minidom
 
 cell = GTCrate.getGTCell()
-cell.setDebug(False)
 
-print "Value was: " + cell.GTFE.DAQ_BOARD_SLOT
+
+
+print "Value was: %d " % cell.GTFE.DAQ_BOARD_SLOT
+old = cell.GTFE.DAQ_BOARD_SLOT
 print "Setting. "
-cell.GTFE.DAQ_BOARD_SLOT = 93
-print "Value is: " + cell.GTFE.DAQ_BOARD_SLOT
+cell.GTFE.DAQ_BOARD_SLOT = old+1
+print "Value is now %d "% cell.GTFE.DAQ_BOARD_SLOT
 
+print "DAQ status for TCS: %s" % cell.GTFE['DAQ.Status.to.TCS']
 
-psb = cell.GTFE
-
+psb = cell.PSB19
 print psb.functions()
 
 # ignore errors here

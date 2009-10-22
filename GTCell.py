@@ -54,8 +54,11 @@ class Board:
                                                     'Board Slot' : TS.UnsignedShort(self._boardSlot),
                                                     'ONLY LIST ITEMS' : False,
                                                     'Item' : name })
-            # TODO: Coerce numeric values or other stuff that's not a string per se?
-            return value
+            # coerce value to int if possible
+            try:
+                return int(value)
+            except:
+                return value
 
         raise AttributeError, "No such hardware function on %s board: %s" % (self._boardType, name)
 
@@ -100,10 +103,16 @@ class GTCell(TS.Cell):
         'PSB1' : 'PSB13',
         'PSB2' : 'PSB14',
         'PSB3' : 'PSB15',
+        'PSB4' : 'PSB19',
+        'PSB5' : 'PSB20',
+        'PSB6' : 'PSB21',                
         }
 
         
     def __init__(self, uri, boards=_boardNames, aliases=_boardAliases):
+        """Creates a new GTCell object. Optional arguments: boards is a list
+           of board names to initialize, aliases is a dict of alias -> real name
+           that define alternative names for boards."""
         TS.Cell.__init__(self, uri, "GT Cell")
 
         # load all boards (or those specified)
@@ -121,14 +130,15 @@ class GTCell(TS.Cell):
     def createBoard(self, name):
         """Create a new board. Any letters are the board name, numbers at the end
            indicate a board slot."""
-        match = re.match(r'([A-Za-z]+)([0-9]*)', name)
+        match = re.match(r'([A-Za-z]+)([0-9]*)$', name)
         if match:
-            boardType = match.group(0)
+            boardType = match.group(1)
             try:
-                boardSlot = int(match.group(1))
+                boardSlot = int(match.group(2))
             except:
                 boardSlot = 0
 
+            print "Creating board %s (type %s, slot %d)"%(name, boardType, boardSlot)
             newBoard = Board(self, boardType, boardSlot)
             newBoard.loadHardwareFunctions()
             self._boards[name] = newBoard            
@@ -136,6 +146,7 @@ class GTCell(TS.Cell):
             raise AttributeError, "Don't understand board name %s!" % name
                 
     def __getattr__(self, name):
+        """getattr handler to return board objects for configured boards."""
         # real atributes start with _
         if name[0]=='_': return self.__dict__[name]
 
