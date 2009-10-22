@@ -8,8 +8,8 @@ TestPort = 4328
 def makeUrl(host, port):
     return 'http://%s:%d' % (host, port)
 
-def getGTCell():
-    return GTCell(makeUrl(host, GTCellPort), "GT Cell")
+def getGTCell(**kw):
+    return GTCell(makeUrl(host, GTCellPort), **kw)
 
 def getGMTCell():
     return TS.Cell(makeUrl(host, GMTCellPort), "GMT Cell")
