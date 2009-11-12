@@ -15,13 +15,11 @@ class Board:
 
     _cell=None
     _functions={}
-    _boardSlot=0
     _boardType=''
 
-    def __init__(self, cell, boardType, boardSlot=0):
+    def __init__(self, cell, boardType):
         self._cell = cell
         self._boardType = boardType
-        self._boardSlot=boardSlot
         self._functions = {}
         
     def loadHardwareFunctions(self):
@@ -51,7 +49,6 @@ class Board:
         # else it' probably a hardwareFunction
         if name in self._functions:
             value = self._cell.HardwareFunctionGet({'Board Type' : self._boardType,
-                                                    'Board Slot' : TS.UnsignedShort(self._boardSlot),
                                                     'ONLY LIST ITEMS' : False,
                                                     'Item' : name })
             # coerce value to int if possible
@@ -72,7 +69,6 @@ class Board:
         
         if name in self._functions:
             self._cell.HardwareFunctionSet({'Board Type' : self._boardType,
-                                            'Board Slot' : TS.UnsignedShort(self._boardSlot),
                                             'ONLY LIST ITEMS' : False,
                                             'Item' : name, 
                                             'Value' : str(value)})
@@ -130,20 +126,10 @@ class GTCell(TS.Cell):
     def createBoard(self, name):
         """Create a new board. Any letters are the board name, numbers at the end
            indicate a board slot."""
-        match = re.match(r'([A-Za-z]+)([0-9]*)$', name)
-        if match:
-            boardType = match.group(1)
-            try:
-                boardSlot = int(match.group(2))
-            except:
-                boardSlot = 0
-
-            print "Creating board %s (type %s, slot %d)"%(name, boardType, boardSlot)
-            newBoard = Board(self, boardType, boardSlot)
-            newBoard.loadHardwareFunctions()
-            self._boards[name] = newBoard            
-        else:
-            raise AttributeError, "Don't understand board name %s!" % name
+        print "Creating board %s" % name
+        newBoard = Board(self, name)
+        newBoard.loadHardwareFunctions()
+        self._boards[name] = newBoard            
                 
     def __getattr__(self, name):
         """getattr handler to return board objects for configured boards."""
