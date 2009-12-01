@@ -1,9 +1,10 @@
+import TS
 from GTCell import GTCell
 
 host = 'localhost'
 GTCellPort = 3228
 TestCellPort = 3838
-TestPort = 4328
+GMTCellPort = 4328
 
 def makeUrl(host, port):
     return 'http://%s:%d' % (host, port)
