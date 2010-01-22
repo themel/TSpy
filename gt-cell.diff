@@ -1,0 +1,68 @@
+Index: include/tools/HardwareFunction.h
+===================================================================
+RCS file: /local/reps/tridas/TriDAS/trigger/gt/ts/cell/include/tools/HardwareFunction.h,v
+retrieving revision 1.16
+diff -u -r1.16 HardwareFunction.h
+--- include/tools/HardwareFunction.h	17 Sep 2009 18:08:29 -0000	1.16
++++ include/tools/HardwareFunction.h	22 Oct 2009 14:40:47 -0000
+@@ -44,6 +44,7 @@
+ 				int substitutionWidth= 0);
+ 		
+ 		static void dumpItemsToLogger(const std::string& boardType="");
++		static std::string dumpItemsToXml(const std::string& boardType="");
+ 		static GtBoard *getBoardFromSlot(unsigned short boardSlot);
+ 		static std::string error();
+ 		static std::string answer();
+Index: src/common/GtHardwareFunctionGet.cc
+===================================================================
+RCS file: /local/reps/tridas/TriDAS/trigger/gt/ts/cell/src/common/GtHardwareFunctionGet.cc,v
+retrieving revision 1.10
+diff -u -r1.10 GtHardwareFunctionGet.cc
+--- src/common/GtHardwareFunctionGet.cc	17 Sep 2009 18:08:29 -0000	1.10
++++ src/common/GtHardwareFunctionGet.cc	22 Oct 2009 14:40:47 -0000
+@@ -82,7 +82,7 @@
+ 	if (printList) {
+ 		HardwareFunction::dumpItemsToLogger(boardType);
+ 		pl << "Dumped " << boardType << " HardwareFunction item descriptions to logger.";
+-		resetPayload(new xdata::String(pl.str()));
++		resetPayload(new xdata::String(HardwareFunction::dumpItemsToXml(boardType)));
+ 		return;
+ 	}
+ 
+Index: src/common/tools/HardwareFunction.cc
+===================================================================
+RCS file: /local/reps/tridas/TriDAS/trigger/gt/ts/cell/src/common/tools/HardwareFunction.cc,v
+retrieving revision 1.20
+diff -u -r1.20 HardwareFunction.cc
+--- src/common/tools/HardwareFunction.cc	17 Sep 2009 19:00:53 -0000	1.20
++++ src/common/tools/HardwareFunction.cc	22 Oct 2009 14:40:47 -0000
+@@ -161,6 +161,29 @@
+ 	LOG4CPLUS_INFO(getStaticLogger(), msg);
+ }
+ 
++std::string HardwareFunction::dumpItemsToXml(const string& boardType)
++{
++	tstoolbox::MutexHandler mh(mutex_);
++
++	std::stringstream xml;
++	xml << "<HardwareFunctions>";
++	map<string, HardwareFunctionMap>::iterator mapit;
++	for (mapit= func_.begin(); mapit!=func_.end(); ++mapit) {
++
++	  const string& typ= mapit->first;
++	  if (boardType!="" && typ!=boardType) continue;
++	  
++	  HardwareFunctionMap& hfm= mapit->second;
++	  HardwareFunctionMap::iterator it;
++	  for (it= hfm.begin(); it!=hfm.end(); ++it)
++	    xml << "<HardwareFunction board=\"" << it->second->boardType_ << "\" name=\"" 
++		<< it->second->name_  << "\" description=\"" << it->second->descriptionMain() << "\"/>";
++	}
++	xml << "</HardwareFunctions>";
++	return xml.str();
++}
++
++
+ GtBoard *HardwareFunction::getBoardFromSlot(unsigned short boardSlot)
+ {
+ 	CellGTCrate* crate= context_->getGtCrate();
