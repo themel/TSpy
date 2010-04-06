@@ -15,18 +15,18 @@ class Board:
 
     _cell=None
     _functions={}
-    _boardType=''
+    _category=''
 
-    def __init__(self, cell, boardType):
+    def __init__(self, cell, category):
         self._cell = cell
-        self._boardType = boardType
+        self._category = category
         self._functions = {}
         
     def loadHardwareFunctions(self):
         """Initializes the list of hardware functions from the cell."""
         self._functions = {}
         # Ask cell for all hardware functions
-        listString = self._cell.HardwareFunctionGet({'Board Type' : self._boardType, 'ONLY LIST ITEMS' : True})
+        listString = self._cell.HardwareFunctionQuery({'Category' : self._category, 'XML' : True})
         doc = xml.dom.minidom.parseString(listString)
 
         # fill _functions with the hw objects
@@ -46,10 +46,9 @@ class Board:
         # if name start with _, it's a real attribute
         if name[0] == '_': return self.__dict__[name]
         
-        # else it' probably a hardwareFunction
+        # else it's probably a hardwareFunction
         if name in self._functions:
-            value = self._cell.HardwareFunctionGet({'Board Type' : self._boardType,
-                                                    'ONLY LIST ITEMS' : False,
+            value = self._cell.HardwareFunctionGet({'Category' : self._category,
                                                     'Item' : name })
             # coerce value to int if possible
             try:
@@ -57,7 +56,7 @@ class Board:
             except:
                 return value
 
-        raise AttributeError, "No such hardware function on %s board: %s" % (self._boardType, name)
+        raise AttributeError, "No such hardware function on %s board: %s" % (self._category, name)
 
 
     def __setattr__(self,name,value):
@@ -68,8 +67,7 @@ class Board:
             return
         
         if name in self._functions:
-            self._cell.HardwareFunctionSet({'Board Type' : self._boardType,
-                                            'ONLY LIST ITEMS' : False,
+            self._cell.HardwareFunctionSet({'Category' : self._category,
                                             'Item' : name, 
                                             'Value' : str(value)})
         else:
