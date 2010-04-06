@@ -6,7 +6,7 @@ cell.setDebug(True)
 
 print "Ping response: ", cell.PingMe()
 
-op1 = cell.createOperation("GtRunOperation") 
+op1 = cell.createOperation("Configuration") 
 
 print "Created new operation, id=%s" % op1._id
 

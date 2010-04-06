@@ -5,17 +5,12 @@ cell = GTCrate.getGTCell()
 cell.setDebug(True)
 
 print "GTL.REC3.Status = ", cell.HardwareFunctionGet({
-    'Board Type' : 'GTL',
+    'Category' : 'GTL',
     'Item' : 'REC3.Status'
     })
 
 print "Crate status: ", cell.GetCrateStatus()
 
-print "Read result: ",  cell.Read({ 'Board Serial Number' : 'TCS',
-                  'Board Slot' : TS.UnsignedShort(7),
-                  'Offset' : '0',
-                  'Register' : 'TIMESLOT0'
-                 })
 
 
 # ignore warning levels <= 2000
